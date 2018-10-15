@@ -1,0 +1,125 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/2.10.0/github-markdown.min.css"/>
+    <style>
+    .markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+    }
+
+    @media (max-width: 767px) {
+        .markdown-body {
+            padding: 15px;
+        }
+    }
+    </style>
+</head>
+<body class="markdown-body">
+<h1 id="programming-assignment-sql-evaluator">Programming Assignment: SQL Evaluator</h1>
+<p>Write a program that executes simple SQL queries.</p>
+<p>You don't have to write an SQL parser -- we've provided a tool (<code>sql-to-json</code>) that converts <a href="#sql-syntax">our subset of SQL</a> into JSON for your program to load.</p>
+<p>Your program should:</p>
+<ol>
+<li>Accept a single file as a command-line argument.  This file will contain a <a href="#json-formatted-sql">JSON-formatted SQL query</a>.</li>
+<li>Load the tables referenced by the query.  For example, if the query references the table name &quot;countries&quot;, load the table data from &quot;countries.table.json&quot; (see <a href="#table-json">Table JSON</a>).</li>
+<li>Detect logical errors in the query.</li>
+<li>If there are no errors, execute the query and print the result table to standard output.</li>
+</ol>
+<p>You can assume the JSON input files are correctly structured.  However, you should detect logical errors in the queries, such as:</p>
+<ul>
+<li>References to column names or table names that don't exist.</li>
+<li>Ambiguous column references (the column name exists in multiple tables).</li>
+<li>Use of a comparison operator (e.g. &quot;&gt;&quot;) on incompatible types (string vs integer).</li>
+</ul>
+<p>You should perform the evaluation entirely in memory, using the standard data structures provided by your programming language.</p>
+<ul>
+<li>You can use external libraries to help with reading/writing JSON.</li>
+<li>If you're writing in Java or Go, we've provided code to handle the JSON parsing part; see the &quot;starter-java/&quot; and &quot;starter-go/&quot; folders.</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<p>You need Python 2.7+ or 3.2+ installed to run the provided <code>sql-to-json</code> tool (check: <code>python --version</code>).</p>
+<p>In the &quot;examples/&quot; folder:</p>
+<ul>
+<li>Table data is in the &quot;.table.json&quot; files</li>
+<li>Sample queries are in the &quot;.sql&quot; files.</li>
+<li>The expected output for each query is in the &quot;.out&quot; files.  You don't have to match the text exactly, and the order of the rows doesn't matter.</li>
+</ul>
+<p>For example, to try the &quot;simple-1.sql&quot; query:</p>
+<pre><code>$ cd examples
+$ ../sql-to-json simple-1.sql &gt; simple-1.json
+$ YOUR-PROGRAM simple-1.json
+</code></pre>
+<p>In Bash or Zsh, you can do this without creating an intermediate &quot;.json&quot; file:</p>
+<pre><code>$ YOUR-PROGRAM &lt;(../sql-to-json simple-1.sql)
+</code></pre>
+<p>To start, skim over the &quot;*.sql&quot; files to get an idea of what queries look like.  We recommend starting with the &quot;simple-*.sql&quot; examples, which cover the fundamentals.</p>
+<h2 id="evaluation-criteria">Evaluation Criteria</h2>
+<p>When you submit your code, include a ReadMe with:</p>
+<ul>
+<li>Instructions for how to run your code.</li>
+<li>If you had 5 more hours to work on this, what would you do?</li>
+<li>Anything else you'd like us to know.</li>
+</ul>
+<p>Primarily, we're looking for code that is correct and easy to understand.  After that, consider ways to improve efficiency for realistic queries.  Assume that the normal usage pattern involves loading the table data once and then executing many queries.</p>
+<p>Obviously, time is limited so not everything can be perfect, but be prepared to discuss the choices you made.</p>
+<h2 id="file-formats">File Formats</h2>
+<h3 id="table-json">Table JSON</h3>
+<p>Each &quot;.table.json&quot; file is a JSON array.  The first element is a list of column definitions and the rest of the elements are the table contents (see &quot;examples/cities.table.json&quot;).</p>
+<p>A column definition is an array where the first element is the column name and the second element is the column type (either &quot;str&quot; or &quot;int&quot;).  Each cell in the table contents is either a string or an integer.</p>
+<h3 id="sql-syntax">SQL Syntax</h3>
+<p>(You don't have to write a parser for this syntax.  The included Python program <code>sql-to-json</code> will convert SQL to a JSON-formatted equivalent.)</p>
+<pre><code>Query =
+    &quot;SELECT&quot; Selector ( &quot;,&quot; Selector )*
+    &quot;FROM&quot; TableRef ( &quot;,&quot; TableRef )*
+    ( &quot;WHERE&quot; Comparison ( &quot;AND&quot; Comparison )* )?
+
+Selector = ColumnRef ( &quot;AS&quot; &lt;identifier&gt; )?
+
+TableRef = &lt;identifier&gt; ( &quot;AS&quot; &lt;identifier&gt; )?
+
+Comparison = Term ( &quot;=&quot; | &quot;!=&quot; | &quot;&gt;&quot; | &quot;&gt;=&quot; | &quot;&lt;&quot; | &quot;&lt;=&quot; ) Term
+
+Term = ColumnRef | &lt;string-literal&gt; | &lt;integer-literal&gt;
+
+ColumnRef = &lt;identifier&gt; ( &quot;.&quot; &lt;identifier&gt; )?
+</code></pre>
+<p>Comments start with &quot;--&quot; and go to the end of the line.</p>
+<p>Joins are performed using <a href="https://en.wikipedia.org/wiki/Join_(SQL)#Inner_join">implicit cross-join notation</a>.</p>
+<h3 id="json-formatted-sql">JSON-formatted SQL</h3>
+<pre><code>Query = {
+    select: Array&lt;Selector&gt;  // non-empty array
+    from: Array&lt;TableRef&gt;  // non-empty array
+    where: Array&lt;Comparison&gt;
+    // The 'as' names in the 'select' and 'from' arrays are guaranteed
+    // to be unique by the parser.
+}
+
+Selector = {
+    column: ColumnRef
+    as: string  // automatically derived from 'column' if there's no explicit &quot;AS&quot;
+}
+
+TableRef = {
+    source: string  // the file to load (without the &quot;.table.json&quot; extension)
+    as: string  // automatically derived from 'source' if there's no explicit &quot;AS&quot;
+}
+
+Comparison = {
+    op: &quot;=&quot; | &quot;!=&quot; | &quot;&gt;&quot; | &quot;&gt;=&quot; | &quot;&lt;&quot; | &quot;&lt;=&quot;
+    left: Term
+    right: Term
+}
+
+Term = {column: ColumnRef} | {literal: int | string}
+
+ColumnRef = {
+    name: string
+    table: string | null  // non-null if the reference is fully-qualified (&quot;table1.column2&quot;)
+}
+</code></pre>
+
+</body>
+</html>
