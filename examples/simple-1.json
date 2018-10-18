@@ -1,0 +1,43 @@
+{
+    "select": [
+        {
+            "column": {
+                "name": "letter",
+                "table": "t1"
+            },
+            "as": "l1"
+        },
+        {
+            "column": {
+                "name": "number",
+                "table": "t1"
+            },
+            "as": "n1"
+        },
+        {
+            "column": {
+                "name": "letter",
+                "table": "t2"
+            },
+            "as": "l2"
+        },
+        {
+            "column": {
+                "name": "number",
+                "table": "t2"
+            },
+            "as": "n2"
+        }
+    ],
+    "from": [
+        {
+            "source": "simple",
+            "as": "t1"
+        },
+        {
+            "source": "simple",
+            "as": "t2"
+        }
+    ],
+    "where": []
+}
